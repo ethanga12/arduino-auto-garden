@@ -1,12 +1,10 @@
 #include "autogarden.h"
 
-state newState = sWAITING;
-
 
 void setup() {
   //begins communication with serial monitor
-  Serial.begin(9600);
-  while (!Serial);
+  // Serial.begin(9600);
+  // while (!Serial);
   pinMode(relayPin, OUTPUT);
 
   // digitalWrite(relayPin, LOW);
@@ -25,15 +23,16 @@ void setup() {
 }
 
 void loop() {
-  // lcd.setCursor(0,1);
-  // lcd.print(millis()/1000);
+  static state newState = sWAITING;
   newState = updateFSM(newState, millis());
-  Serial.println(newState);
+  // Serial.println(newState);
+  // int humidityReading = analogRead(soilSensorPin);
+  // displayHumidityReading(humidityReading);
   delay(500);
 }
 
 state updateFSM(state curState, int mils) {
-  static int humidityReading = analogRead(humidityReading);
+  int humidityReading = analogRead(soilSensorPin);
   displayHumidityReading(humidityReading);
 
   if (waterLevelEmpty()) {
