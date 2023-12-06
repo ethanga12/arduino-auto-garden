@@ -1,7 +1,7 @@
 #include "autogarden.h"
 
 state newState = sWAITING;
-int savedClock;
+
 
 void setup() {
   //begins communication with serial monitor
@@ -20,12 +20,15 @@ void setup() {
   pinMode(waterLevelPin, INPUT);
   lcd.begin(16,2); //TODO: Reconfigure to our needs
   lcdOutput("SETTING UP");
-  savedClock = millis();
+  // lcd.print("HELLO WORLD");
   delay(2000);
 }
 
 void loop() {
+  // lcd.setCursor(0,1);
+  // lcd.print(millis()/1000);
   newState = updateFSM(newState, millis());
+  Serial.println(newState);
   delay(500);
 }
 
@@ -68,10 +71,10 @@ state updateFSM(state curState, int mils) {
     {
       lcdOutput("POST-WATER");
       if (mils - timeAtPumpClosed >= POST_WATERING_WAIT_DURATION) {
-        if (!checkWateringWorked()) {
-          //Some sort of error
-          return sPOST_WATER;
-        }
+        // if (!checkWateringWorked()) {
+        //   //Some sort of error
+        //   return sPOST_WATER;
+        // }
         lcdOutput("Waiting...");
         return sWAITING;
       }
@@ -104,7 +107,7 @@ bool checkWateringWorked(int waterLevel, int humidityReading) {
     Serial.println("ERROR: Water level did not change");
     return false;
   }
-  initialWaterLevel = curWaterLevel;
+  // initialWaterLevel = curWaterLevel;
 
 
   int curSoilMoisture = analogRead(soilSensorPin);
@@ -121,8 +124,10 @@ void lcdOutput(String message) {
     Serial.println(message);
   } 
   else {
+    
+    lcd.setCursor(0,0);
     lcd.clear();
-    lcd.output(message);
+    lcd.print(message);
   }
 }
 
@@ -132,6 +137,6 @@ void displayHumidityReading(int humidityReading) {
     Serial.println(humidityReading);
   } else {
     lcd.clear();
-    lcd.output(humidityReading);
+    lcd.print(humidityReading);
   }
 }

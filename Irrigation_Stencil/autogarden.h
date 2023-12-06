@@ -4,7 +4,7 @@ const int relayPin = 9;
 const int soilSensorPin = A0;
 const int waterLevelPin = A1;
 
-const int rs = 0, en = 1, d4 = 2, d5 = 3, d6 = 4, d7 = 5;
+const int rs = 12, en = 11, d4 = 2, d5 = 3, d6 = 4, d7 = 5;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 //TODO: Find actual humidity threshold
