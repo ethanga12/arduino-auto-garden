@@ -23,6 +23,7 @@ void setup() {
 }
 
 void loop() {
+  lcd.clear();
   static state newState = sWAITING;
   newState = updateFSM(newState, millis());
   // Serial.println(newState);
@@ -123,9 +124,6 @@ void lcdOutput(String message) {
     Serial.println(message);
   } 
   else {
-    
-    lcd.setCursor(0,0);
-    lcd.clear();
     lcd.print(message);
   }
 }
