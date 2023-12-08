@@ -14,8 +14,8 @@ void setup() {
   // digitalWrite(relayPin,LOW);
 
 
-  pinMode(soilSensorPin, INPUT);
-  pinMode(waterLevelPin, INPUT);
+  // pinMode(soilSensorPin, INPUT);
+  // pinMode(waterLevelPin, INPUT);
   lcd.begin(16,2); //TODO: Reconfigure to our needs
   lcdOutput("SETTING UP");
   // lcd.print("HELLO WORLD");
@@ -136,6 +136,7 @@ void displayHumidityReading(int humidityReading) {
     Serial.println(humidityReading);
   } else {
     lcd.clear();
+    
     lcd.print(humidityReading);
   }
 }
