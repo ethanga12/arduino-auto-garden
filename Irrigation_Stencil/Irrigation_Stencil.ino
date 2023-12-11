@@ -13,6 +13,8 @@ void setup() {
   // delay(1000);
   // digitalWrite(relayPin,LOW);
 
+  pinMode(interruptPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), ISR, RISING);
 
   // pinMode(soilSensorPin, INPUT);
   // pinMode(waterLevelPin, INPUT);
@@ -137,4 +139,9 @@ void displayHumidityReading(int humidityReading) {
     
     lcd.print(humidityReading);
   }
+}
+
+void ISR() {
+  Serial.print("ISR Successful");
+  lcdOutput("ISR Successful");
 }
