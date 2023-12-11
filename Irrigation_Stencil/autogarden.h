@@ -20,7 +20,7 @@ int timeAtPumpClosed;
 
 const int POST_WATERING_WAIT_DURATION = 5000;
 
-const bool debugging = false;
+const bool debugging = true;
 
 typedef enum {
   sWAITING,

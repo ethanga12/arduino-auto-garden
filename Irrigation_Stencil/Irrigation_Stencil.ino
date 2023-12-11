@@ -3,8 +3,8 @@
 
 void setup() {
   //begins communication with serial monitor
-  // Serial.begin(9600);
-  // while (!Serial);
+  Serial.begin(9600);
+  while (!Serial);
   pinMode(relayPin, OUTPUT);
 
   // digitalWrite(relayPin, LOW);
@@ -21,16 +21,19 @@ void setup() {
   lcd.begin(16,2); //TODO: Reconfigure to our needs
   lcdOutput("SETTING UP");
   // lcd.print("HELLO WORLD");
-  delay(2000);
+  delay(2500);
+  initiateWDT();
 }
 
 void loop() {
-  lcd.clear();
   static state newState = sWAITING;
+  //Pets WDT
+  clearWDT();
+
+  //Clear LCD each iteration
+  lcd.clear();
+
   newState = updateFSM(newState, millis());
-  // Serial.println(newState);
-  // int humidityReading = analogRead(soilSensorPin);
-  // displayHumidityReading(humidityReading);
   delay(500);
 }
 
@@ -126,6 +129,7 @@ void lcdOutput(String message) {
     Serial.println(message);
   } 
   else {
+    lcd.setCursor(0,0);
     lcd.print(message);
   }
 }
@@ -135,8 +139,7 @@ void displayHumidityReading(int humidityReading) {
     Serial.print("Moisture reading: ");
     Serial.println(humidityReading);
   } else {
-    lcd.clear();
-    
+    lcd.setCursor(0, 1);
     lcd.print(humidityReading);
   }
 }
