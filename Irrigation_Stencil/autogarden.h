@@ -18,9 +18,13 @@ int timeAtPumpOpen;
 int pumpOpenDuration = 1000; //Configurable
 int timeAtPumpClosed;
 
+volatile bool sysOn = true;
+volatile unsigned long timeAtLastButtonPress = 0;
+unsigned long debounceDelay = 100;
+
 const int POST_WATERING_WAIT_DURATION = 5000;
 
-const bool debugging = true;
+const bool debugging = false;
 
 typedef enum {
   sWAITING,
