@@ -141,6 +141,11 @@ void displayHumidityReading(int humidityReading) {
 }
 
 void ISR() {
-  Serial.print("ISR Successful");
-  lcdOutput("ISR Successful");
+  unsigned long currPressTime = millis();
+
+  if (currPressTime - timeAtLastButtonPress > debounceDelay) {
+    Serial.println("ISR Successful");
+    timeAtLastButtonPress = currPressTime;
+    sysOn = !sysOn;
+  }
 }
