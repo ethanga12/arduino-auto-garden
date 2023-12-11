@@ -6,34 +6,30 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);
   pinMode(relayPin, OUTPUT);
-
-  // digitalWrite(relayPin, LOW);
-  // delay(1000);
   digitalWrite(relayPin, HIGH);
-  // delay(1000);
-  // digitalWrite(relayPin,LOW);
 
   pinMode(interruptPin, INPUT);
   attachInterrupt(digitalPinToInterrupt(interruptPin), ISR, RISING);
 
-  // pinMode(soilSensorPin, INPUT);
-  // pinMode(waterLevelPin, INPUT);
   lcd.begin(16,2); //TODO: Reconfigure to our needs
   lcdOutput("SETTING UP");
-  // lcd.print("HELLO WORLD");
-  delay(2500);
-  initiateWDT();
+
+  // delay(2500);
+  // initializeWDT();
+  initializeTimer();
 }
 
 void loop() {
-  static state newState = sWAITING;
-  //Pets WDT
-  clearWDT();
+  Serial.println(millis());
+  Serial.println(getCurTime());
+  // static state newState = sWAITING;
+  // //Pets WDT
+  // clearWDT();
 
-  //Clear LCD each iteration
-  lcd.clear();
+  // //Clear LCD each iteration
+  // lcd.clear();
 
-  newState = updateFSM(newState, millis());
+  // newState = updateFSM(newState, millis());
   delay(500);
 }
 
