@@ -16,7 +16,7 @@ const int HUMIDITY_THRESHOLD = 700; //Values range from 1000 (dry) to 300 (wet)
 const int WATER_LEVEL_THRESHOLD = 100; //Values range from 0 (dry) to 600 (wet)
 
 int timeAtPumpOpen;
-int pumpOpenDuration = 1000; //Configurable
+int pumpOpenDuration = 1000; //TODO: Configurable?
 int timeAtPumpClosed;
 
 volatile bool sysOn = true;

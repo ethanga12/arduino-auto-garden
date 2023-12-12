@@ -3,8 +3,8 @@
 
 void setup() {
   //begins communication with serial monitor
-  Serial.begin(9600);
-  while (!Serial);
+  // Serial.begin(9600);
+  // while (!Serial);
   pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin, HIGH);
 
@@ -15,13 +15,11 @@ void setup() {
   lcdOutput("SETTING UP");
 
   // delay(2500);
-  // initializeWDT();
+  initializeWDT();
   initializeTimer();
 }
 
 void loop() {
-  // Serial.println(millis());
-  // Serial.println(getCurTime());
   static state newState = sWAITING;
   //Pets WDT
   clearWDT();
@@ -149,7 +147,11 @@ void displayHumidityReading(int humidityReading) {
     Serial.println(humidityReading);
   } else {
     lcd.setCursor(0, 1);
-    lcd.print("Moisture level: " + String(humidityReading));
+
+    int humidityPercentage = max((850 - humidityReading)/4,0);
+    // String message = "Moisture: " + String(humidityReading); 
+    String message = "Moisture: " + String(humidityPercentage) + "%";
+    lcd.print(message);
   }
 }
 
