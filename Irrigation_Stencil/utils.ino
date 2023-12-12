@@ -37,7 +37,8 @@ void WDT_Handler() {
   WDT->INTFLAG.reg = WDT_INTFLAG_EW;
   
   // TODO: Warn user that a watchdog reset may happen
-  Serial.println("Watchdog about to trigger");
+  lcd.clear();
+  lcd.print("WDT");
 }
 
 uint32_t curTime;
@@ -72,6 +73,7 @@ void initializeTimer() {
 //Returns current time safely
 uint32_t getCurTime() {
   return curTime;
+  // return millis();
 }
 
 void TC4_Handler() {

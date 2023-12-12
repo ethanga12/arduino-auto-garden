@@ -8,13 +8,13 @@ void setup() {
   pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin, HIGH);
 
-  // pinMode(interruptPin, INPUT);
-  // attachInterrupt(digitalPinToInterrupt(interruptPin), ISR, RISING);
+  pinMode(interruptPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), handlePowerButton, RISING);
 
   lcd.begin(16,2); //TODO: Reconfigure to our needs
   lcdOutput("SETTING UP");
 
-  // delay(2500);
+  delay(1000);
   initializeWDT();
   initializeTimer();
 }
@@ -35,8 +35,9 @@ state updateFSM(state curState, int mils) {
   int humidityReading = analogRead(soilSensorPin);
   displayHumidityReading(humidityReading);
 
-  if (sysOn) {
+  if (!sysOn) {
     lcdOutput("System Off");
+    digitalWrite(relayPin, HIGH);
     return sSYSTEM_OFF;
   }
 
@@ -48,7 +49,7 @@ state updateFSM(state curState, int mils) {
   switch(curState) {
     case sWAITING:
     {
-      lcdOutput("WAITING");
+      lcdOutput("Waiting...");
       if (humidityReading >= HUMIDITY_THRESHOLD) {
         digitalWrite(relayPin, LOW); //Not sure why this has to be low?
         lcdOutput("Watering...");
@@ -60,7 +61,8 @@ state updateFSM(state curState, int mils) {
 
     case sWATERING:
     {
-      lcdOutput("WATERING");
+      // lcdOutput("WATERING");
+      lcdOutput("Watering...");
       if (mils - timeAtPumpOpen >= pumpOpenDuration) {
         digitalWrite(relayPin, HIGH);
         lcdOutput("Done Watering");
@@ -73,13 +75,14 @@ state updateFSM(state curState, int mils) {
 
     case sPOST_WATER:
     {
-      lcdOutput("POST-WATER");
+      // lcdOutput("POST-WATER");
+      lcdOutput("Done Watering");
       if (mils - timeAtPumpClosed >= POST_WATERING_WAIT_DURATION) {
         // if (!checkWateringWorked()) {
         //   //Some sort of error
         //   return sPOST_WATER;
         // }
-        lcdOutput("Waiting...");
+        lcdOutput("Waiting...   ");
         return sWAITING;
       }
 
@@ -87,7 +90,7 @@ state updateFSM(state curState, int mils) {
     }
     case sREFILL_WATER:
     {
-      lcdOutput("REFILL_WATER");
+      // lcdOutput("REFILL_WATER");
       if (!waterLevelEmpty()) {
         lcdOutput("Waiting...");
         return sWAITING;
@@ -100,7 +103,7 @@ state updateFSM(state curState, int mils) {
     case sSYSTEM_OFF:
     {
       lcdOutput("System Off");
-      if (!sysOn) {
+      if (sysOn) {
         lcdOutput("Waiting...");
         return sWAITING;
       }
@@ -148,19 +151,26 @@ void displayHumidityReading(int humidityReading) {
   } else {
     lcd.setCursor(0, 1);
 
-    int humidityPercentage = max((850 - humidityReading)/4,0);
+    int humidityPercentage = min(max((850 - humidityReading)/4,0),100);
     // String message = "Moisture: " + String(humidityReading); 
     String message = "Moisture: " + String(humidityPercentage) + "%";
     lcd.print(message);
+    // lcd.print(digitalRead(interruptPin));
   }
 }
 
-void ISR() {
+void handlePowerButton() {
   // unsigned long currPressTime = millis();
+  // lcd.Output("ISR ACTIVATED");
 
-  if ((long)(millis() - timeAtLastButtonPress) >= debounceDelay * 1000) {
+  if ((long)(millis() - timeAtLastButtonPress) >= debounceDelay * 100) {
     // Serial.println("ISR Successful");
-    sysOn = !sysOn;
+    // sysOn = !sysOn;
+    if (sysOn) {
+      sysOn = false;
+    } else {
+      sysOn = true;
+    }
     timeAtLastButtonPress = millis();
   }
 }
