@@ -8,8 +8,8 @@ void setup() {
   pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin, HIGH);
 
-  pinMode(interruptPin, INPUT);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), ISR, RISING);
+  // pinMode(interruptPin, INPUT);
+  // attachInterrupt(digitalPinToInterrupt(interruptPin), ISR, RISING);
 
   lcd.begin(16,2); //TODO: Reconfigure to our needs
   lcdOutput("SETTING UP");
@@ -20,16 +20,16 @@ void setup() {
 }
 
 void loop() {
-  Serial.println(millis());
-  Serial.println(getCurTime());
-  // static state newState = sWAITING;
-  // //Pets WDT
-  // clearWDT();
+  // Serial.println(millis());
+  // Serial.println(getCurTime());
+  static state newState = sWAITING;
+  //Pets WDT
+  clearWDT();
 
-  // //Clear LCD each iteration
-  // lcd.clear();
+  //Clear LCD each iteration
+  lcd.clear();
 
-  // newState = updateFSM(newState, millis());
+  newState = updateFSM(newState, getCurTime());
   delay(500);
 }
 
@@ -49,7 +49,7 @@ state updateFSM(state curState, int mils) {
       if (humidityReading >= HUMIDITY_THRESHOLD) {
         digitalWrite(relayPin, LOW); //Not sure why this has to be low?
         lcdOutput("Watering...");
-        timeAtPumpOpen = millis();
+        timeAtPumpOpen = getCurTime();
         return sWATERING;
       }
       return sWAITING;
@@ -61,7 +61,7 @@ state updateFSM(state curState, int mils) {
       if (mils - timeAtPumpOpen >= pumpOpenDuration) {
         digitalWrite(relayPin, HIGH);
         lcdOutput("Done Watering");
-        timeAtPumpClosed = millis();
+        timeAtPumpClosed = getCurTime();
         return sPOST_WATER;
       }
 
@@ -136,7 +136,7 @@ void displayHumidityReading(int humidityReading) {
     Serial.println(humidityReading);
   } else {
     lcd.setCursor(0, 1);
-    lcd.print(humidityReading);
+    lcd.print("Moisture level: " + String(humidityReading));
   }
 }
 

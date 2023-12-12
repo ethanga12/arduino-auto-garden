@@ -1,3 +1,4 @@
+#include <sys/_stdint.h>
 #include <LiquidCrystal.h>
 
 const int relayPin = 9;
@@ -32,5 +33,3 @@ typedef enum {
   sPOST_WATER,
   sREFILL_WATER,
 } state;
-
-int curTime;

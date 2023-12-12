@@ -40,35 +40,43 @@ void WDT_Handler() {
   Serial.println("Watchdog about to trigger");
 }
 
-void initializeTimer() {
-  //TODO: Use TC4 (TC3 not configured for 32-bit counters)
-  // Configure and enable GCLK for TC:
-  GCLK->GENDIV.reg = GCLK_GENDIV_DIV(0) | GCLK_GENDIV_ID(4); // do not divide gclk 4
-  while(GCLK->STATUS.bit.SYNCBUSY);
+uint32_t curTime;
 
-  GCLK->GENCTRL.reg = GCLK_GENCTRL_GENEN | GCLK_GENCTRL_ID(4) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_SRC(6);
-  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(4) | GCLK_CLKCTRL_ID_TC4_TC5;
+void initializeTimer() {
+  // Configure and enable GCLK for TC:
+  //Note that we chose to use GCLK0 due to the more accurate frequency
+  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID_TC4_TC5;
   while(GCLK->STATUS.bit.SYNCBUSY); // write-synchronized
 
+  //Checks that clocks 4/5 properly set
   Serial.println((PM->APBCMASK.reg >> 12) & 1, BIN);
   Serial.println((PM->APBCMASK.reg >> 13) & 1, BIN);
-  Serial.println((PM->APBCMASK.reg >> 11) & 1, BIN);
-  Serial.println((PM->APBCMASK.reg >> 15) & 1, BIN);
 
-  //TODO: prescaler set to 0x5 (64)
-  TC4->COUNT32.CTRLA.reg = TC_CTRLA_ENABLE | TC_CTRLA_MODE_COUNT16 | TC_CTRLA_PRESCALER_DIV1024 | TC_CTRLA_PRESCSYNC(1);
+  //Set to match frequency with 32-bit mode
+  TC4->COUNT32.CTRLA.reg |= TC_CTRLA_MODE_COUNT32 | TC_CTRLA_PRESCALER_DIV1024 | TC_CTRLA_PRESCSYNC_PRESC | TC_CTRLA_WAVEGEN_MFRQ;
+  TC4->COUNT32.CTRLA.bit.ENABLE = 1;
 
-  //Enable TC interrupt. Likely never occurs
+  //Configure interrupt frequency
+  const int CLOCK_FREQ = SystemCoreClock;
+  TC4->COUNT32.CC[0].reg = CLOCK_FREQ / (1024 * 100); //1024 to get into seconds and 100 to get into every 10ms
+  while(TC4->COUNT32.STATUS.bit.SYNCBUSY);
+
+  //Enable TC interrupt
   NVIC_SetPriority(TC4_IRQn, 0);
   NVIC_EnableIRQ(TC4_IRQn);
 
-  //EVCTRL.OVFEO enable bit to generate event upon overflow/underflow
-  //Note that timer values overflow!
-  //TODO: test reading from counter register vs 
-
-  //Can i even use interrupts? Maybe just get counter value
+  TC4->COUNT32.INTENSET.reg |= TC_INTENSET_MC0;
+  while(TC4->COUNT32.STATUS.bit.SYNCBUSY);
 }
 
+//Returns current time safely
 uint32_t getCurTime() {
-  return REG_TC4_COUNT16_COUNT;
+  return curTime;
+}
+
+void TC4_Handler() {
+  // Serial.print("Cur time: ");
+  // Serial.println(curTime);
+  curTime += 10; //Increments curTime by 10ms intervals
+  TC4->COUNT16.INTFLAG.reg |= TC_INTFLAG_MC0;
 }
