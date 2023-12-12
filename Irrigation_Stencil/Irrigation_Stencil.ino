@@ -37,6 +37,11 @@ state updateFSM(state curState, int mils) {
   int humidityReading = analogRead(soilSensorPin);
   displayHumidityReading(humidityReading);
 
+  if (sysOn) {
+    lcdOutput("System Off");
+    return sSYSTEM_OFF;
+  }
+
   if (waterLevelEmpty()) {
     lcdOutput("REFILL WATER!");
     return sREFILL_WATER; //Likely shutdown whole system while in this state until water refilled to save energy
@@ -94,6 +99,14 @@ state updateFSM(state curState, int mils) {
       delay(1000);
       return sREFILL_WATER;
     }
+    case sSYSTEM_OFF:
+    {
+      lcdOutput("System Off");
+      if (!sysOn) {
+        lcdOutput("Waiting...");
+        return sWAITING;
+      }
+    }
   }
 }
 
@@ -141,11 +154,11 @@ void displayHumidityReading(int humidityReading) {
 }
 
 void ISR() {
-  unsigned long currPressTime = millis();
+  // unsigned long currPressTime = millis();
 
-  if (currPressTime - timeAtLastButtonPress > debounceDelay) {
-    Serial.println("ISR Successful");
-    timeAtLastButtonPress = currPressTime;
+  if ((long)(millis() - timeAtLastButtonPress) >= debounceDelay * 1000) {
+    // Serial.println("ISR Successful");
     sysOn = !sysOn;
+    timeAtLastButtonPress = millis();
   }
 }
