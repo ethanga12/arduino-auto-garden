@@ -20,7 +20,7 @@ int timeAtPumpClosed;
 
 volatile bool sysOn = true;
 volatile unsigned long timeAtLastButtonPress = 0;
-unsigned long debounceDelay = 100;
+long debounceDelay = 15;
 
 const int POST_WATERING_WAIT_DURATION = 5000;
 
@@ -31,6 +31,7 @@ typedef enum {
   sWATERING,
   sPOST_WATER,
   sREFILL_WATER,
+  sSYSTEM_OFF,
 } state;
 
 int curTime;
