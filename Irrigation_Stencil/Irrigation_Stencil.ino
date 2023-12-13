@@ -35,13 +35,13 @@ state updateFSM(state curState, int mils) {
   int humidityReading = analogRead(soilSensorPin);
   displayHumidityReading(humidityReading);
 
-  if (!sysOn) {
+  if (!sysOn) { //Transitions 1-5, 2-5, 3-5, 4-5
     lcdOutput("System Off");
     digitalWrite(relayPin, HIGH);
     return sSYSTEM_OFF;
   }
 
-  if (waterLevelEmpty()) {
+  if (waterLevelEmpty() && sysOn) { //Transitions 1-4, 2-4, 3-4
     lcdOutput("REFILL WATER!");
     return sREFILL_WATER; //Likely shutdown whole system while in this state until water refilled to save energy
   }
