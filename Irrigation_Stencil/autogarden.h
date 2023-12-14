@@ -1,26 +1,31 @@
-#ifndef AUTO_GARDEN_H
-#define AUTO_GARDEN_H
-
 #include <sys/_stdint.h>
 #include <LiquidCrystal.h>
 
-// Declare global variables with extern
-extern const int relayPin;
-extern const int soilSensorPin;
-extern const int waterLevelPin;
-extern const int interruptPin;
-extern const int rs, en, d4, d5, d6, d7;
+const int relayPin = 9;
+const int soilSensorPin = A0;
+const int waterLevelPin = A1;
+const int interruptPin = 7;
 
-extern LiquidCrystal lcd;
+const int rs = 12, en = 11, d4 = 2, d5 = 3, d6 = 4, d7 = 5;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
-extern const int HUMIDITY_THRESHOLD;
-extern const int WATER_LEVEL_THRESHOLD;
-extern int pumpOpenDuration;
-extern const int POST_WATERING_WAIT_DURATION;
+//TODO: Find actual humidity threshold
+const int HUMIDITY_THRESHOLD = 700; //Values range from 1000 (dry) to 300 (wet)
 
-extern volatile bool sysOn;
-extern volatile unsigned long timeAtLastButtonPress;
-extern long debounceDelay;
+// If water level is below this threshold, water needs to be refilled
+const int WATER_LEVEL_THRESHOLD = 100; //Values range from 0 (dry) to 600 (wet)
+
+int timeAtPumpOpen;
+int pumpOpenDuration = 1000; //TODO: Configurable?
+int timeAtPumpClosed;
+
+volatile bool sysOn = true;
+volatile unsigned long timeAtLastButtonPress = 0;
+long debounceDelay = 15;
+
+const int POST_WATERING_WAIT_DURATION = 5000;
+
+const bool debugging = false;
 
 typedef enum {
   sWAITING,
@@ -29,16 +34,3 @@ typedef enum {
   sREFILL_WATER,
   sSYSTEM_OFF,
 } state;
-
-// Function declarations
-void handlePowerButton();
-void lcdOutput(String message);
-void displayHumidityReading(int humidityReading);
-bool waterLevelEmpty();
-bool checkWateringWorked(int waterLevel, int humidityReading);
-state updateFSM(state curState, int mils);
-void initializeWDT();
-void initializeTimer();
-
-#endif
-

@@ -1,68 +1,63 @@
 #include "autogarden.h"
 
 // Uncomment the following line to enable test mode
-// #define TEST_MODE
-
-const int relayPin = 9;
-const int soilSensorPin = A0;
-const int waterLevelPin = A1;
-const int interruptPin = 7;
-
-const int rs = 12, en = 11, d4 = 2, d5 = 3, d6 = 4, d7 = 5;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-
-const int HUMIDITY_THRESHOLD = 700;
-const int WATER_LEVEL_THRESHOLD = 100;
-
-int timeAtPumpOpen;
-int pumpOpenDuration = 1000;
-int timeAtPumpClosed;
-
-volatile bool sysOn = true;
-volatile unsigned long timeAtLastButtonPress = 0;
-long debounceDelay = 15;
-
-const int POST_WATERING_WAIT_DURATION = 5000;
-
-const bool debugging = false;
+#define TEST_MODE
 
 #ifdef TEST_MODE
-int mockAnalogValues[10]; // Adjust size based on number of analog pins used
+int mockAnalogValues[A2];
+uint32_t mockMillisVal = 0;
 
-void setMockAnalogRead(int pin, int value) {
+void setMockAnalogRead(int pin, int val) {
     switch (pin){
       case relayPin:
+        mockAnalogValues[relayPin] = val;
         break;
       case soilSensorPin:
+        mockAnalogValues[soilSensorPin] = val;
         break;
       case waterLevelPin:
+        mockAnalogValues[waterLevelPin] = val;
         break;
       case interruptPin:
+        mockAnalogValues[interruptPin] = val;
         break; 
-      default: 
+      default:
         break;
     }
+}
+
+void setMockMillis(unsigned long val) {
+  mockMillisVal = val;
+}
+
+uint32_t mockMillis() {
+  return mockMillisVal;
 }
 
 int mockAnalogRead(int pin) {
-    if(pin >= 0 && pin < 10) { // Replace 10 with the number of pins you are using
+    if(pin >= 0 && pin < A2) { 
         return mockAnalogValues[pin];
     }
-    return 0; // Default value if the pin is out of range
+    return 0; 
 }
 
 void resetMockAnalogRead() {
-    for(int i = 0; i < 10; i++) {
+    for(int i = 0; i < A2; i++) {
         mockAnalogValues[i] = 0;
     }
 }
 
+
 // Override the original analogRead function with the mock
 #define analogRead(pin) mockAnalogRead(pin)
+#define getCurTime() mockMillis()
 
 void testWaterLevelSensor();
 void testSoilMoistureSensor();
-// Other test function declarations
+void testMotor();
+void testSystemOnOff();
+void testInterrupt();
+void testFSM();
 #endif
 
 void setup() {
@@ -80,7 +75,6 @@ void setup() {
     initializeWDT();
     initializeTimer();
     #else
-    // Setup code for testing mode
     Serial.begin(9600);
     while (!Serial);
     resetMockAnalogRead();
@@ -104,6 +98,7 @@ void loop() {
     testWaterLevelSensor();
     testSoilMoistureSensor();
     // Other tests
+    setMockMillis(0); //starts mock clock
     while(true); // Stop the loop after running tests
     #endif
 }
@@ -142,6 +137,99 @@ void testSoilMoistureSensor() {
     Serial.println("Wet Soil Test: [Your Condition]");
 
     Serial.println("Soil Moisture Sensor Test Completed.");
+}
+
+void testFSM () {
+  //Transition 1-1
+  Serial.println("Checking Transition 1-1:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 300);
+  setMockAnalogRead(soilSensorPin, 600);
+  sWAITING == updateFSM(sWAITING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 1-2
+  Serial.println("Checking Transition 1-2:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 300);
+  setMockAnalogRead(soilSensorPin, 800);
+  sWATERING == updateFSM(sWAITING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 1-4
+  Serial.println("Checking Transition 1-4:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 90);
+  setMockAnalogRead(soilSensorPin, 800);
+  sREFILL_WATER == updateFSM(sWAITING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 1-5
+  Serial.println("Checking Transition 1-4:");
+  sysOn = false; 
+  sSYSTEM_OFF == updateFSM(sWAITING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 2-2
+  Serial.println("Checking Transition 2-2:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 300);
+  timeAtPumpOpen = 10;
+  setMockMillis(900);
+  sWATERING == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 2-3
+  Serial.println("Checking Transition 2-3:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 300);
+  timeAtPumpOpen = 10;
+  setMockMillis(10000);
+  sPOST_WATER == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 2-4
+  Serial.println("Checking Transition 2-4:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 90);
+  sREFILL_WATER == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 2-5
+  Serial.println("Checking Transition 2-5:");
+  sysOn = false; 
+  sSYSTEM_OFF == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 3-1
+  Serial.println("Checking Transition 3-1:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 300);
+  timeAtPumpOpen = 10;
+  setMockMillis(10000);
+  sWAITING == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 3-3
+  Serial.println("Checking Transition 3-3:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 300);
+  timeAtPumpOpen = 10;
+  setMockMillis(100);
+  sPOST_WATER == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 3-4
+  Serial.println("Checking Transition 3-4:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 10);
+  sREFILL_WATER == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 3-5
+  Serial.println("Checking Transition 3-5:");
+  sysOn = false; 
+  sSYSTEM_OFF == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 4-1
+  Serial.println("Checking Transition 4-1:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 300);
+  sWATERING == updateFSM(sPOST_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 4-4
+  Serial.println("Checking Transition 4-4:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 15);
+  sREFILL_WATER == updateFSM(sPOST_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 4-5
+  Serial.println("Checking Transition 4-4:");
+  sysOn = false; 
+  sSYSTEM_OFF == updateFSM(sPOST_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 5-1
+  Serial.println("Checking Transition 5-1:");
+  sysOn = true; 
+  sWAITING == updateFSM(sSYSTEM_OFF, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 5-5
+  Serial.println("Checking Transition 5-1:");
+  sysOn = false; 
+  sSYSTEM_OFF == updateFSM(sPOST_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
 }
 
 #endif
