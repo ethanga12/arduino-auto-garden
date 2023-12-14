@@ -1,35 +1,150 @@
 #include "autogarden.h"
 
+// Uncomment the following line to enable test mode
+// #define TEST_MODE
+
+const int relayPin = 9;
+const int soilSensorPin = A0;
+const int waterLevelPin = A1;
+const int interruptPin = 7;
+
+const int rs = 12, en = 11, d4 = 2, d5 = 3, d6 = 4, d7 = 5;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+const int HUMIDITY_THRESHOLD = 700;
+const int WATER_LEVEL_THRESHOLD = 100;
+
+int timeAtPumpOpen;
+int pumpOpenDuration = 1000;
+int timeAtPumpClosed;
+
+volatile bool sysOn = true;
+volatile unsigned long timeAtLastButtonPress = 0;
+long debounceDelay = 15;
+
+const int POST_WATERING_WAIT_DURATION = 5000;
+
+const bool debugging = false;
+
+#ifdef TEST_MODE
+int mockAnalogValues[10]; // Adjust size based on number of analog pins used
+
+void setMockAnalogRead(int pin, int value) {
+    switch (pin){
+      case relayPin:
+        break;
+      case soilSensorPin:
+        break;
+      case waterLevelPin:
+        break;
+      case interruptPin:
+        break; 
+      default: 
+        break;
+    }
+}
+
+int mockAnalogRead(int pin) {
+    if(pin >= 0 && pin < 10) { // Replace 10 with the number of pins you are using
+        return mockAnalogValues[pin];
+    }
+    return 0; // Default value if the pin is out of range
+}
+
+void resetMockAnalogRead() {
+    for(int i = 0; i < 10; i++) {
+        mockAnalogValues[i] = 0;
+    }
+}
+
+// Override the original analogRead function with the mock
+#define analogRead(pin) mockAnalogRead(pin)
+
+void testWaterLevelSensor();
+void testSoilMoistureSensor();
+// Other test function declarations
+#endif
 
 void setup() {
-  //begins communication with serial monitor
-  // Serial.begin(9600);
-  // while (!Serial);
-  pinMode(relayPin, OUTPUT);
-  digitalWrite(relayPin, HIGH);
+    #ifndef TEST_MODE
+    pinMode(relayPin, OUTPUT);
+    digitalWrite(relayPin, HIGH);
 
-  pinMode(interruptPin, INPUT);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), handlePowerButton, RISING);
+    pinMode(interruptPin, INPUT);
+    attachInterrupt(digitalPinToInterrupt(interruptPin), handlePowerButton, RISING);
 
-  lcd.begin(16,2); //TODO: Reconfigure to our needs
-  lcdOutput("SETTING UP");
+    lcd.begin(16,2); //TODO: Reconfigure to our needs
+    lcdOutput("SETTING UP");
 
-  delay(1000);
-  initializeWDT();
-  initializeTimer();
+    delay(1000);
+    initializeWDT();
+    initializeTimer();
+    #else
+    // Setup code for testing mode
+    Serial.begin(9600);
+    while (!Serial);
+    resetMockAnalogRead();
+    // Additional setup for testing if necessary
+    #endif
 }
 
 void loop() {
-  static state newState = sWAITING;
-  //Pets WDT
-  clearWDT();
+    #ifndef TEST_MODE
+    static state newState = sWAITING;
+    //Pets WDT
+    clearWDT();
 
-  //Clear LCD each iteration
-  lcd.clear();
+    //Clear LCD each iteration
+    lcd.clear();
 
-  newState = updateFSM(newState, getCurTime());
-  delay(500);
+    newState = updateFSM(newState, getCurTime());
+    delay(500);
+    #else
+    // Testing loop
+    testWaterLevelSensor();
+    testSoilMoistureSensor();
+    // Other tests
+    while(true); // Stop the loop after running tests
+    #endif
 }
+
+#ifdef TEST_MODE
+// Test function implementations
+void testWaterLevelSensor() {
+    Serial.println("Testing Water Level Sensor...");
+
+    // Mock low water level
+    setMockAnalogRead(waterLevelPin, 50); // Assuming 50 represents a low water level
+    bool isLow = waterLevelEmpty();
+    Serial.println("Low Water Level Test: " + String(isLow ? "Passed" : "Failed"));
+
+    // Mock high water level
+    setMockAnalogRead(waterLevelPin, 200); // Assuming 200 represents a high water level
+    isLow = waterLevelEmpty();
+    Serial.println("High Water Level Test: " + String(!isLow ? "Passed" : "Failed"));
+
+    Serial.println("Water Level Sensor Test Completed.");
+}
+
+void testSoilMoistureSensor() {
+    Serial.println("Testing Soil Moisture Sensor...");
+
+    // Mock dry soil
+    setMockAnalogRead(soilSensorPin, 800); // Assuming 800 represents dry soil
+    // Simulate the FSM response or check the variable directly
+    // ... 
+    Serial.println("Dry Soil Test: [Your Condition]");
+
+    // Mock wet soil
+    setMockAnalogRead(soilSensorPin, 300); // Assuming 300 represents wet soil
+    // Simulate the FSM response or check the variable directly
+    // ...
+    Serial.println("Wet Soil Test: [Your Condition]");
+
+    Serial.println("Soil Moisture Sensor Test Completed.");
+}
+
+#endif
 
 state updateFSM(state curState, int mils) {
   int humidityReading = analogRead(soilSensorPin);
