@@ -78,10 +78,9 @@ state updateFSM(state curState, int mils) {
       // lcdOutput("POST-WATER");
       lcdOutput("Done Watering");
       if (mils - timeAtPumpClosed >= POST_WATERING_WAIT_DURATION) {
-        // if (!checkWateringWorked()) {
-        //   //Some sort of error
-        //   return sPOST_WATER;
-        // }
+        if (!checkWateringWorked()) {
+          return sPOST_WATER;
+        }
         lcdOutput("Waiting...   ");
         return sWAITING;
       }
@@ -116,19 +115,10 @@ bool waterLevelEmpty() {
 }
 
 bool checkWateringWorked(int waterLevel, int humidityReading) {
-  int curWaterLevel = analogRead(waterLevelPin);
-  if (curWaterLevel >= waterLevel) {
-    //ERROR
-    Serial.println("ERROR: Water level did not change");
-    return false;
-  }
-  // initialWaterLevel = curWaterLevel;
-
-
   int curSoilMoisture = analogRead(soilSensorPin);
   if (curSoilMoisture >= humidityReading) {
     //ERROR or put more water or wait?
-    Serial.println("ERROR: Humidity did not change");
+    lcdOutput("Watering failed!");
     return false;
   }
   return true;
