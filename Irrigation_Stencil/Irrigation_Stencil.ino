@@ -1,7 +1,7 @@
 #include "autogarden.h"
 
 // Uncomment the following line to enable test mode
-#define TEST_MODE
+// #define TEST_MODE
 
 #ifdef TEST_MODE
 int mockAnalogValues[A2];
@@ -56,7 +56,6 @@ void testWaterLevelSensor();
 void testSoilMoistureSensor();
 void testMotor();
 void testSystemOnOff();
-void testInterrupt();
 void testFSM();
 #endif
 
@@ -77,8 +76,8 @@ void setup() {
     #else
     Serial.begin(9600);
     while (!Serial);
+    setMockMillis(0); //'starts' mock clock
     resetMockAnalogRead();
-    // Additional setup for testing if necessary
     #endif
 }
 
@@ -97,8 +96,9 @@ void loop() {
     // Testing loop
     testWaterLevelSensor();
     testSoilMoistureSensor();
-    // Other tests
-    setMockMillis(0); //starts mock clock
+    testMotor();
+    testSystemOnOff();
+    testFSM();    
     while(true); // Stop the loop after running tests
     #endif
 }
@@ -106,37 +106,75 @@ void loop() {
 #ifdef TEST_MODE
 // Test function implementations
 void testWaterLevelSensor() {
-    Serial.println("Testing Water Level Sensor...");
-
+    Serial.println("Testing Water Level Sensor High/Low Levels: ");
+    bool myCheckHigh;
+    bool myCheckLow;
     // Mock low water level
     setMockAnalogRead(waterLevelPin, 50); // Assuming 50 represents a low water level
-    bool isLow = waterLevelEmpty();
-    Serial.println("Low Water Level Test: " + String(isLow ? "Passed" : "Failed"));
-
+    myCheckLow = waterLevelEmpty();
     // Mock high water level
     setMockAnalogRead(waterLevelPin, 200); // Assuming 200 represents a high water level
-    isLow = waterLevelEmpty();
-    Serial.println("High Water Level Test: " + String(!isLow ? "Passed" : "Failed"));
-
-    Serial.println("Water Level Sensor Test Completed.");
+    myCheckHigh = !waterLevelEmpty();
+    myCheckHigh && myCheckLow ? Serial.println("Passed") : Serial.println("Failed");
 }
 
 void testSoilMoistureSensor() {
-    Serial.println("Testing Soil Moisture Sensor...");
-
+    Serial.println("Testing Soil Moisture Sensor Wet/Dry Levels:");
+    bool myCheckDry;
+    bool myCheckWet; 
     // Mock dry soil
-    setMockAnalogRead(soilSensorPin, 800); // Assuming 800 represents dry soil
-    // Simulate the FSM response or check the variable directly
-    // ... 
-    Serial.println("Dry Soil Test: [Your Condition]");
+    setMockAnalogRead(soilSensorPin, 800); // 800 represents dry soil
 
+    myCheckDry = mockAnalogValues[soilSensorPin] >= HUMIDITY_THRESHOLD;
     // Mock wet soil
-    setMockAnalogRead(soilSensorPin, 300); // Assuming 300 represents wet soil
-    // Simulate the FSM response or check the variable directly
-    // ...
-    Serial.println("Wet Soil Test: [Your Condition]");
+    setMockAnalogRead(soilSensorPin, 90);
+    myCheckWet = !(mockAnalogValues[soilSensorPin] >= HUMIDITY_THRESHOLD);
+    myCheckDry && myCheckWet ? Serial.println("Passed!") : Serial.println("Failed");
 
-    Serial.println("Soil Moisture Sensor Test Completed.");
+}
+
+void testMotor() { //this also just checks if the mockAnalog settings work. 
+  Serial.println("Testing Motor Signal Send: ");
+  bool myCheck; 
+  setMockAnalogRead(relayPin, HIGH);
+  if (mockAnalogValues[relayPin] == HIGH) {
+    myCheck = true; 
+  } 
+  else {
+    myCheck = false; 
+    Serial.println("Error sending signals to motor");
+    return;
+  }
+  setMockAnalogRead(relayPin, LOW);
+  if (mockAnalogValues[relayPin] == LOW) {
+    myCheck = true;
+  } else {
+    myCheck = false;
+  }
+  myCheck ? Serial.println("Passed!") : Serial.println("Error sending signals to motor");
+}
+
+void testSystemOnOff() {
+  Serial.println("Testing On/Off Functionality (no debouncing): ");
+  bool myCheck;
+  sysOn = true;
+  handlePowerButton();
+  if (!sysOn) {
+    myCheck = true;
+  } else {
+    myCheck = false; 
+    Serial.println("Error turning System off");
+    return; 
+  }
+
+  handlePowerButton();
+  if (sysOn) {
+    myCheck = true;
+  } else {
+    Serial.println("Error turning System on");
+    return; 
+  }
+  Serial.println("Passed!");
 }
 
 void testFSM () {
@@ -189,45 +227,46 @@ void testFSM () {
   Serial.println("Checking Transition 3-1:");
   sysOn = true; 
   setMockAnalogRead(waterLevelPin, 300);
-  timeAtPumpOpen = 10;
+  timeAtPumpClosed = 10;
   setMockMillis(10000);
-  sWAITING == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  sWAITING == updateFSM(sPOST_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
   //Transition 3-3
   Serial.println("Checking Transition 3-3:");
   sysOn = true; 
   setMockAnalogRead(waterLevelPin, 300);
   timeAtPumpOpen = 10;
-  setMockMillis(100);
-  sPOST_WATER == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  setMockMillis(100); 
+  sPOST_WATER == updateFSM(sPOST_WATER, getCurTime  ()) ? Serial.println("Passed!") : Serial.println("Failed");
   //Transition 3-4
   Serial.println("Checking Transition 3-4:");
   sysOn = true; 
   setMockAnalogRead(waterLevelPin, 10);
-  sREFILL_WATER == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  sREFILL_WATER == updateFSM(sPOST_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
   //Transition 3-5
   Serial.println("Checking Transition 3-5:");
   sysOn = false; 
-  sSYSTEM_OFF == updateFSM(sWATERING, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  sSYSTEM_OFF == updateFSM(sPOST_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
   //Transition 4-1
   Serial.println("Checking Transition 4-1:");
   sysOn = true; 
   setMockAnalogRead(waterLevelPin, 300);
-  sWATERING == updateFSM(sPOST_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  sWAITING == updateFSM(sREFILL_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
   //Transition 4-4
   Serial.println("Checking Transition 4-4:");
   sysOn = true; 
   setMockAnalogRead(waterLevelPin, 15);
-  sREFILL_WATER == updateFSM(sPOST_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  sREFILL_WATER == updateFSM(sREFILL_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
   //Transition 4-5
-  Serial.println("Checking Transition 4-4:");
+  Serial.println("Checking Transition 4-5:");
   sysOn = false; 
-  sSYSTEM_OFF == updateFSM(sPOST_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  sSYSTEM_OFF == updateFSM(sREFILL_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
   //Transition 5-1
   Serial.println("Checking Transition 5-1:");
   sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 300);
   sWAITING == updateFSM(sSYSTEM_OFF, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
   //Transition 5-5
-  Serial.println("Checking Transition 5-1:");
+  Serial.println("Checking Transition 5-5:");
   sysOn = false; 
   sSYSTEM_OFF == updateFSM(sPOST_WATER, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
 }
@@ -237,7 +276,6 @@ void testFSM () {
 state updateFSM(state curState, int mils) {
   int humidityReading = analogRead(soilSensorPin);
   displayHumidityReading(humidityReading);
-
   if (!sysOn) { //Transitions 1-5, 2-5, 3-5, 4-5
     lcdOutput("System Off");
     digitalWrite(relayPin, HIGH);
@@ -248,6 +286,7 @@ state updateFSM(state curState, int mils) {
     lcdOutput("REFILL WATER!");
     return sREFILL_WATER; //Likely shutdown whole system while in this state until water refilled to save energy
   }
+  // Serial.println(); 
 
   switch(curState) {
     case sWAITING:
@@ -365,15 +404,21 @@ void displayHumidityReading(int humidityReading) {
 void handlePowerButton() {
   // unsigned long currPressTime = millis();
   // lcd.Output("ISR ACTIVATED");
-
-  if ((long)(millis() - timeAtLastButtonPress) >= debounceDelay * 100) {
-    // Serial.println("ISR Successful");
-    // sysOn = !sysOn;
-    if (sysOn) {
-      sysOn = false;
-    } else {
-      sysOn = true;
+  #ifdef TEST_MODE
+  sysOn = !sysOn;
+    #else
+    if ((long)(millis() - timeAtLastButtonPress) >= debounceDelay * 100) {
+      // Serial.println("ISR Successful");
+      sysOn = !sysOn;
+      // if (sysOn) {
+      //   sysOn = false;
+      // } else if (sysOn == false) {
+      //   sysOn = true;
+      // }
+      timeAtLastButtonPress = millis();
     }
-    timeAtLastButtonPress = millis();
-  }
+
+  
+  #endif
+
 }
