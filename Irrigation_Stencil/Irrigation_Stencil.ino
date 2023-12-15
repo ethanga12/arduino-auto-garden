@@ -115,7 +115,7 @@ void testWaterLevelSensor() {
     // Mock high water level
     setMockAnalogRead(waterLevelPin, 200); // Assuming 200 represents a high water level
     myCheckHigh = !waterLevelEmpty();
-    myCheckHigh && myCheckLow ? Serial.println("Passed") : Serial.println("Failed");
+    myCheckHigh && myCheckLow ? Serial.println("Passed!") : Serial.println("Failed");
 }
 
 void testSoilMoistureSensor() {
@@ -265,6 +265,11 @@ void testFSM () {
   sysOn = true; 
   setMockAnalogRead(waterLevelPin, 300);
   sWAITING == updateFSM(sSYSTEM_OFF, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
+  //Transition 5-4
+  Serial.println("Checking Transition 5-4:");
+  sysOn = true; 
+  setMockAnalogRead(waterLevelPin, 90);
+  sREFILL_WATER == updateFSM(sSYSTEM_OFF, getCurTime()) ? Serial.println("Passed!") : Serial.println("Failed");
   //Transition 5-5
   Serial.println("Checking Transition 5-5:");
   sysOn = false; 
