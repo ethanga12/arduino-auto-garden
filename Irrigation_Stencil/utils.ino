@@ -71,10 +71,12 @@ void initializeTimer() {
 }
 
 //Returns current time safely
-uint32_t getCurTime() {
-  return curTime;
-  // return millis();
-}
+#ifndef TEST_MODE
+  uint32_t getCurTime() {
+    return curTime;
+    // return millis();
+  }
+#endif
 
 void TC4_Handler() {
   // Serial.print("Cur time: ");
