@@ -51,7 +51,7 @@ void resetMockAnalogRead() {
 // Override the original analogRead function with the mock
 #define analogRead(pin) mockAnalogRead(pin)
 #define getCurTime() mockMillis()
-
+void testMocks();
 void testWaterLevelSensor();
 void testSoilMoistureSensor();
 void testMotor();
@@ -98,13 +98,36 @@ void loop() {
     testSoilMoistureSensor();
     testMotor();
     testSystemOnOff();
-    testFSM();    
+    testFSM();
+    testMocks();   
     while(true); // Stop the loop after running tests
     #endif
 }
 
 #ifdef TEST_MODE
 // Test function implementations
+void testMocks() {
+  Serial.println("Testing Mocks: ");
+  setMockAnalogRead(relayPin, HIGH);
+  setMockAnalogRead(soilSensorPin, 300);
+  setMockAnalogRead(waterLevelPin, 10);
+  setMockAnalogRead(interruptPin, HIGH);
+  int myCheck = 0;
+  mockAnalogValues[relayPin] == HIGH ? myCheck++ : Serial.println("Error Setting Relay Pin"); 
+  mockAnalogValues[soilSensorPin] == 300 ? myCheck++ : Serial.println("Error Setting Soil Sensor Pin"); 
+  mockAnalogValues[waterLevelPin] == 10 ? myCheck++ : Serial.println("Error Setting Water Level Pin"); 
+  mockAnalogValues[interruptPin] == HIGH ? myCheck++ : Serial.println("Error Setting Interrupt Pin"); 
+  myCheck == 4 ? Serial.println("Set Mock Analog Read Tests: Passed!") : Serial.println("Set Mock Analog Read Tests: Failed");
+  setMockMillis(1000);
+  getCurTime() == 1000 ? Serial.println("Set Mock Millis and TEST_MODE Macro CurTime Redefintion Test: Passed!") : Serial.println("Set Mock Millis and TEST_MODE Macro CurTime Redefintion Test: Failed");
+  setMockMillis(0);
+  resetMockAnalogRead();
+  for (int i = 0; 0 < i < A2; i++) {
+    myCheck += mockAnalogRead(i);
+  }
+  (!(myCheck > 4) && getCurTime() == 0) ? Serial.println("Reset Mocks: Passed!") : Serial.println("Reset Mocks: Failed");
+}
+
 void testWaterLevelSensor() {
     Serial.println("Testing Water Level Sensor High/Low Levels: ");
     bool myCheckHigh;
