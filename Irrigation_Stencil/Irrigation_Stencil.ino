@@ -1,7 +1,7 @@
 #include "autogarden.h"
 
 // Uncomment the following line to enable test mode
-// #define TEST_MODE
+#define TEST_MODE
 
 #ifdef TEST_MODE
 int mockAnalogValues[A2];
@@ -94,12 +94,12 @@ void loop() {
     delay(500);
     #else
     // Testing loop
-    testWaterLevelSensor();
-    testSoilMoistureSensor();
-    testMotor();
-    testSystemOnOff();
-    testFSM();
-    testMocks();   
+    testWaterLevelSensor(); //Tests water level high/low levels
+    testSoilMoistureSensor(); //Tests soil sensor high/low levels
+    testMotor(); //Tests motor gets sent a high signal with our mock functions
+    testSystemOnOff(); //Tests system turns on/off (without debouncing)
+    testFSM(); //All transition and non-transition tests
+    testMocks(); //Tests all mock functions (anything we use for our mockAnalogVals and mockMillis including their reset)
     while(true); // Stop the loop after running tests
     #endif
 }
