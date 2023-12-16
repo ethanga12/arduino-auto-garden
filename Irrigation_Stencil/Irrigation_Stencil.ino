@@ -302,8 +302,7 @@ void testFSM () {
 #endif
 
 state updateFSM(state curState, int mils) {
-  int humidityReading = analogRead(soilSensorPin);
-  displayHumidityReading(humidityReading);
+  
   if (!sysOn) { //Transitions 1-5, 2-5, 3-5, 4-5
     lcdOutput("System Off");
     digitalWrite(relayPin, HIGH);
@@ -314,6 +313,9 @@ state updateFSM(state curState, int mils) {
     lcdOutput("REFILL WATER!");
     return sREFILL_WATER; //Likely shutdown whole system while in this state until water refilled to save energy
   }
+
+  int humidityReading = analogRead(soilSensorPin);
+  displayHumidityReading(humidityReading);
   // Serial.println(); 
 
   switch(curState) {
