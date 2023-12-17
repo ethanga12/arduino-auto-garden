@@ -1,7 +1,7 @@
 #include "autogarden.h"
 
 // Uncomment the following line to enable test mode
-#define TEST_MODE
+// #define TEST_MODE
 
 #ifdef TEST_MODE
 int mockAnalogValues[A2];
