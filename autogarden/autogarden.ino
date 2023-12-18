@@ -308,15 +308,16 @@ void testFSM () {
 
 // Updates the state and variables
 state updateFSM(state curState, int mils) {
-  
-  if (!sysOn) { //Transitions 1-5, 2-5, 3-5, 4-5
+
+   // Transitions 1-5, 2-5, 3-5, 4-5: If the button is pressed, taking the system from sysOn = true to sysOn = false, transitions to a system off state where the normal watering behavior does not occur
+  if (!sysOn) {
     lcdOutput("System Off");
     digitalWrite(relayPin, HIGH);
     return sSYSTEM_OFF;
   }
 
-  // If the water level is empty, prevents entering any other states
-  if (waterLevelEmpty() && sysOn) { //Transitions 1-4, 2-4, 3-4
+  // Transitions 1-4, 2-4, 3-4, 5-4: If the water level is empty, transfers to the REFILL_WATER state and prints "REFILL WATER!" to the lcd
+  if (waterLevelEmpty() && sysOn) {
     lcdOutput("REFILL WATER!");
     return sREFILL_WATER; //Likely shutdown whole system while in this state until water refilled to save energy
   }
@@ -324,24 +325,31 @@ state updateFSM(state curState, int mils) {
   int humidityReading = analogRead(soilSensorPin);
   displayHumidityReading(humidityReading);
 
+
   switch(curState) {
-    // Waits for the soil sensor to be above threshold
+    //State 1: Waiting State - Waits for the soil sensor to be above threshold
     case sWAITING:
     {
       lcdOutput("Waiting...");
+
+      //Transition 1-2: If the humidityReading is equal to or greater than the threshold, we open the pump and move into the watering step
       if (humidityReading >= HUMIDITY_THRESHOLD) {
         digitalWrite(relayPin, LOW); //Not sure why this has to be low?
         lcdOutput("Watering...");
         timeAtPumpOpen = getCurTime();
         return sWATERING;
       }
+
+      //Transition 1-1: We stay in waiting and do nothing if humidityReading is less than the threshold
       return sWAITING;
     }
-    // Waters the plant for pumpOpenDuration
+    // State 2: Watering - Waters the plant for pumpOpenDuration
     case sWATERING:
     {
       // lcdOutput("WATERING");
       lcdOutput("Watering...");
+      
+      //Transition 2-3: After enough time has passed, moves to a post-watering waiting step to prevent constant watering
       if (mils - timeAtPumpOpen >= pumpOpenDuration) {
         digitalWrite(relayPin, HIGH);
         lcdOutput("Done Watering");
@@ -349,41 +357,51 @@ state updateFSM(state curState, int mils) {
         return sPOST_WATER;
       }
 
+      //Transition 2-2: We remain in step 2 and do nothing if not enough time has passed during the watering step
       return sWATERING;
     }
-    // Checks that watering worked properly
+    // State 3: Post Water - Stops us from constantly watering and instead waits for sensor readings to update + check if the watering worked
     case sPOST_WATER:
     {
       // lcdOutput("POST-WATER");
       lcdOutput("Done Watering");
       if (mils - timeAtPumpClosed >= POST_WATERING_WAIT_DURATION) {
+        //Transition 3-3: If the set amount of time has passed, but, the humidity reading doesn't change, we remain in the post-water step
         if (!checkWateringWorked(humidityReading)) {
           return sPOST_WATER;
         }
         lcdOutput("Waiting...   ");
+        //Transition 3-1: Move back to the normal waiting step
         return sWAITING;
       }
 
+      //Transition 3-3: We stay in the post-water state if not enough time has passed
       return sPOST_WATER;
     }
 
-    // Alerts the user to the empty reservoir
+    // State 4: Refill Water - Alerts the user to fill the empty reservoir
     case sREFILL_WATER:
     {
       // lcdOutput("REFILL_WATER");
+
+      //Transition 4-1: If the water level is no longer empty, we transition back to the waiting step as expected
       if (!waterLevelEmpty()) {
         lcdOutput("Waiting...");
         return sWAITING;
       }
 
       lcdOutput("REFILL WATER!");
+
+      //Transition 4-4: If the water level remains empty, we stay in state 4
       return sREFILL_WATER;
     }
 
-    // Emergency off state
+    //State 5: System Off - Emergency off state
     case sSYSTEM_OFF:
     {
       lcdOutput("System Off");
+
+      //Transition 5-1: If the system is turned on, we return to a system on state
       if (sysOn) {
         lcdOutput("Waiting...");
         return sWAITING;
