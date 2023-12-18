@@ -9,14 +9,14 @@ const int interruptPin = 7;
 const int rs = 12, en = 11, d4 = 2, d5 = 3, d6 = 4, d7 = 5;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
-//TODO: Find actual humidity threshold
+
 const int HUMIDITY_THRESHOLD = 700; //Values range from 1000 (dry) to 300 (wet)
 
 // If water level is below this threshold, water needs to be refilled
 const int WATER_LEVEL_THRESHOLD = 100; //Values range from 0 (dry) to 600 (wet)
 
 int timeAtPumpOpen;
-const int pumpOpenDuration = 1000; //TODO: Configurable?
+const int pumpOpenDuration = 1000;
 int timeAtPumpClosed;
 
 volatile bool sysOn = true;
@@ -24,6 +24,7 @@ volatile unsigned long timeAtLastButtonPress = 0;
 const long debounceDelay = 15;
 
 const int POST_WATERING_WAIT_DURATION = 5000;
+
 
 const bool debugging = false;
 

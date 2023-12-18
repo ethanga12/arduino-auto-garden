@@ -62,14 +62,19 @@ void testFSM();
 void setup() {
     #ifndef TEST_MODE
     pinMode(relayPin, OUTPUT);
+
+    // Note: writing the relay pin HIGH opens the connection (i.e. stops the pump)
     digitalWrite(relayPin, HIGH);
 
+    // Setup interrupt
     pinMode(interruptPin, INPUT);
     attachInterrupt(digitalPinToInterrupt(interruptPin), handlePowerButton, RISING);
 
-    lcd.begin(16,2); //TODO: Reconfigure to our needs
+    // Setup lcd
+    lcd.begin(16,2);
     lcdOutput("SETTING UP");
 
+    // Start WDT and TC
     delay(1000);
     initializeWDT();
     initializeTimer();
@@ -301,6 +306,7 @@ void testFSM () {
 
 #endif
 
+// Updates the state and variables
 state updateFSM(state curState, int mils) {
   
   if (!sysOn) { //Transitions 1-5, 2-5, 3-5, 4-5
@@ -309,6 +315,7 @@ state updateFSM(state curState, int mils) {
     return sSYSTEM_OFF;
   }
 
+  // If the water level is empty, prevents entering any other states
   if (waterLevelEmpty() && sysOn) { //Transitions 1-4, 2-4, 3-4
     lcdOutput("REFILL WATER!");
     return sREFILL_WATER; //Likely shutdown whole system while in this state until water refilled to save energy
@@ -316,9 +323,9 @@ state updateFSM(state curState, int mils) {
 
   int humidityReading = analogRead(soilSensorPin);
   displayHumidityReading(humidityReading);
-  // Serial.println(); 
 
   switch(curState) {
+    // Waits for the soil sensor to be above threshold
     case sWAITING:
     {
       lcdOutput("Waiting...");
@@ -330,7 +337,7 @@ state updateFSM(state curState, int mils) {
       }
       return sWAITING;
     }
-
+    // Waters the plant for pumpOpenDuration
     case sWATERING:
     {
       // lcdOutput("WATERING");
@@ -344,22 +351,23 @@ state updateFSM(state curState, int mils) {
 
       return sWATERING;
     }
-
+    // Checks that watering worked properly
     case sPOST_WATER:
     {
       // lcdOutput("POST-WATER");
       lcdOutput("Done Watering");
       if (mils - timeAtPumpClosed >= POST_WATERING_WAIT_DURATION) {
-        // if (!checkWateringWorked()) {
-        //   //Some sort of error
-        //   return sPOST_WATER;
-        // }
+        if (!checkWateringWorked(humidityReading)) {
+          return sPOST_WATER;
+        }
         lcdOutput("Waiting...   ");
         return sWAITING;
       }
 
       return sPOST_WATER;
     }
+
+    // Alerts the user to the empty reservoir
     case sREFILL_WATER:
     {
       // lcdOutput("REFILL_WATER");
@@ -372,6 +380,8 @@ state updateFSM(state curState, int mils) {
       delay(1000);
       return sREFILL_WATER;
     }
+
+    // Emergency off state
     case sSYSTEM_OFF:
     {
       lcdOutput("System Off");
@@ -383,29 +393,22 @@ state updateFSM(state curState, int mils) {
   }
 }
 
+// Checks if the water reservoir is empty
 bool waterLevelEmpty() {
   return analogRead(waterLevelPin) < WATER_LEVEL_THRESHOLD;
 }
 
-bool checkWateringWorked(int waterLevel, int humidityReading) {
-  int curWaterLevel = analogRead(waterLevelPin);
-  if (curWaterLevel >= waterLevel) {
-    //ERROR
-    Serial.println("ERROR: Water level did not change");
-    return false;
-  }
-  // initialWaterLevel = curWaterLevel;
-
-
+// Checks if the water reached the plant
+bool checkWateringWorked(int humidityReading) {
   int curSoilMoisture = analogRead(soilSensorPin);
   if (curSoilMoisture >= humidityReading) {
-    //ERROR or put more water or wait?
     Serial.println("ERROR: Humidity did not change");
     return false;
   }
   return true;
 }
 
+// Helper function for lcd output and debugging output to serial
 void lcdOutput(String message) {
   if (debugging) {
     Serial.println(message);
@@ -416,6 +419,7 @@ void lcdOutput(String message) {
   }
 }
 
+// Helper function to display humidity in user-readable format
 void displayHumidityReading(int humidityReading) {
   if (debugging) {
     Serial.print("Moisture reading: ");
@@ -427,10 +431,10 @@ void displayHumidityReading(int humidityReading) {
     // String message = "Moisture: " + String(humidityReading); 
     String message = "Moisture: " + String(humidityPercentage) + "%";
     lcd.print(message);
-    // lcd.print(digitalRead(interruptPin));
   }
 }
 
+// ISR handling the power button
 void handlePowerButton() {
   // unsigned long currPressTime = millis();
   // lcd.Output("ISR ACTIVATED");
@@ -440,11 +444,6 @@ void handlePowerButton() {
     if ((long)(millis() - timeAtLastButtonPress) >= debounceDelay * 100) {
       // Serial.println("ISR Successful");
       sysOn = !sysOn;
-      // if (sysOn) {
-      //   sysOn = false;
-      // } else if (sysOn == false) {
-      //   sysOn = true;
-      // }
       timeAtLastButtonPress = millis();
     }
 
