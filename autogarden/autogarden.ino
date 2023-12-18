@@ -439,12 +439,12 @@ void handlePowerButton() {
   // lcd.Output("ISR ACTIVATED");
   #ifdef TEST_MODE
   sysOn = !sysOn;
-    #else
-    if ((long)(millis() - timeAtLastButtonPress) >= debounceDelay * 100) {
-      // Serial.println("ISR Successful");
-      sysOn = !sysOn;
-      timeAtLastButtonPress = millis();
-    }
+  #else
+  if ((long)(millis() - timeAtLastButtonPress) >= debounceDelay * 100) {
+    // Serial.println("ISR Successful");
+    sysOn = !sysOn;
+    timeAtLastButtonPress = millis();
+  }
 
   
   #endif
