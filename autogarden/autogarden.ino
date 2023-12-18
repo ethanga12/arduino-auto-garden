@@ -7,7 +7,7 @@
 int mockAnalogValues[A2];
 uint32_t mockMillisVal = 0;
 
-void setMockAnalogRead(int pin, int val) {
+void setMockAnalogRead(int pin, int val) { //Mock pin set value function 
     switch (pin){
       case relayPin:
         mockAnalogValues[relayPin] = val;
@@ -26,22 +26,22 @@ void setMockAnalogRead(int pin, int val) {
     }
 }
 
-void setMockMillis(unsigned long val) {
+void setMockMillis(unsigned long val) { //Mock set time function 
   mockMillisVal = val;
 }
 
-uint32_t mockMillis() {
+uint32_t mockMillis() { // Get mock time function (remapped to getCurTime on line 53)
   return mockMillisVal;
 }
 
-int mockAnalogRead(int pin) {
+int mockAnalogRead(int pin) { //Reads in mock pin values
     if(pin >= 0 && pin < A2) { 
         return mockAnalogValues[pin];
     }
     return 0; 
 }
 
-void resetMockAnalogRead() {
+void resetMockAnalogRead() { //Resets all mock pin values
     for(int i = 0; i < A2; i++) {
         mockAnalogValues[i] = 0;
     }
