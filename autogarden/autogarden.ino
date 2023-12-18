@@ -377,7 +377,6 @@ state updateFSM(state curState, int mils) {
       }
 
       lcdOutput("REFILL WATER!");
-      delay(1000);
       return sREFILL_WATER;
     }
 
