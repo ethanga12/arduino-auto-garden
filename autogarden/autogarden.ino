@@ -111,42 +111,45 @@ void loop() {
 
 #ifdef TEST_MODE
 // Test function implementations
-void testMocks() {
+void testMocks() { // Tests all mocks
   Serial.println("Testing Mocks: ");
   setMockAnalogRead(relayPin, HIGH);
   setMockAnalogRead(soilSensorPin, 300);
   setMockAnalogRead(waterLevelPin, 10);
   setMockAnalogRead(interruptPin, HIGH);
   int myCheck = 0;
+  // Checks that all pins were set correctly with our setMockAnalogREad
   mockAnalogValues[relayPin] == HIGH ? myCheck++ : Serial.println("Error Setting Relay Pin"); 
   mockAnalogValues[soilSensorPin] == 300 ? myCheck++ : Serial.println("Error Setting Soil Sensor Pin"); 
   mockAnalogValues[waterLevelPin] == 10 ? myCheck++ : Serial.println("Error Setting Water Level Pin"); 
   mockAnalogValues[interruptPin] == HIGH ? myCheck++ : Serial.println("Error Setting Interrupt Pin"); 
   myCheck == 4 ? Serial.println("Set Mock Analog Read Tests: Passed!") : Serial.println("Set Mock Analog Read Tests: Failed");
+  // Checks that our setMockMillis updates mockMills, as well as that our getCurTime macro works effectively
   setMockMillis(1000);
   getCurTime() == 1000 ? Serial.println("Set Mock Millis and TEST_MODE Macro CurTime Redefintion Test: Passed!") : Serial.println("Set Mock Millis and TEST_MODE Macro CurTime Redefintion Test: Failed");
   setMockMillis(0);
   resetMockAnalogRead();
+  // Simple counter check to make sure entire array is cleared
   for (int i = 0; 0 < i < A2; i++) {
     myCheck += mockAnalogRead(i);
   }
   (!(myCheck > 4) && getCurTime() == 0) ? Serial.println("Reset Mocks: Passed!") : Serial.println("Reset Mocks: Failed");
 }
 
-void testWaterLevelSensor() {
+void testWaterLevelSensor() { // Tests water level sensor responses 
     Serial.println("Testing Water Level Sensor High/Low Levels: ");
     bool myCheckHigh;
     bool myCheckLow;
     // Mock low water level
-    setMockAnalogRead(waterLevelPin, 50); // Assuming 50 represents a low water level
+    setMockAnalogRead(waterLevelPin, 50); // 50 represents a low water level
     myCheckLow = waterLevelEmpty();
     // Mock high water level
-    setMockAnalogRead(waterLevelPin, 200); // Assuming 200 represents a high water level
+    setMockAnalogRead(waterLevelPin, 200); // 200 represents a high water level
     myCheckHigh = !waterLevelEmpty();
     myCheckHigh && myCheckLow ? Serial.println("Passed!") : Serial.println("Failed");
 }
 
-void testSoilMoistureSensor() {
+void testSoilMoistureSensor() { // Tests soil moisture sensor responses
     Serial.println("Testing Soil Moisture Sensor Wet/Dry Levels:");
     bool myCheckDry;
     bool myCheckWet; 
@@ -182,7 +185,7 @@ void testMotor() { //this also just checks if the mockAnalog settings work.
   myCheck ? Serial.println("Passed!") : Serial.println("Error sending signals to motor");
 }
 
-void testSystemOnOff() {
+void testSystemOnOff() { // Tests on off without debouncing, so no timer check is used
   Serial.println("Testing On/Off Functionality (no debouncing): ");
   bool myCheck;
   sysOn = true;
@@ -205,7 +208,7 @@ void testSystemOnOff() {
   Serial.println("Passed!");
 }
 
-void testFSM () {
+void testFSM () { //All transition tests based off first order logic statements in our FSM
   //Transition 1-1
   Serial.println("Checking Transition 1-1:");
   sysOn = true; 
